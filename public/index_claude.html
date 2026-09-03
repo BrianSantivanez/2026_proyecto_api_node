@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Catálogo · Sistema de Biblioteca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: { DEFAULT:'#12141B', panel:'#191C26', raised:'#1F2330', border:'#2A2E3D' },
+          parchment: { DEFAULT:'#ECE8DE', muted:'#8D90A0' },
+          brass: { DEFAULT:'#D9A44D', dim:'#B58938' },
+          leather: { DEFAULT:'#6B8F71' },
+          rust: { DEFAULT:'#C4695A' },
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          sans: ['Inter', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color:#12141B; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:#12141B; }
+  ::-webkit-scrollbar-thumb { background:#2A2E3D; border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover { background:#3a3f52; }
+  .nav-item.active { background:#1F2330; color:#D9A44D; border-color:#D9A44D; }
+  .nav-item.active .nav-dot { background:#D9A44D; }
+  input:focus, select:focus, textarea:focus { outline:none; box-shadow:0 0 0 2px #D9A44D55; border-color:#D9A44D; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  .fade-in { animation: fadeIn .25s ease-out; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to {opacity:1; transform:translateY(0);} }
+</style>
+</head>
+<body class="font-sans text-parchment min-h-screen">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex md:w-64 flex-col border-r border-ink-border bg-ink-panel shrink-0">
+    <div class="px-6 pt-7 pb-6 border-b border-ink-border">
+      <p class="font-display text-2xl text-parchment leading-none">Catálogo</p>
+      <p class="text-xs text-parchment-muted mt-1 tracking-wide">Sistema de biblioteca</p>
+    </div>
+    <nav id="sidebar-nav" class="flex-1 px-3 py-5 space-y-1 overflow-y-auto"></nav>
+    <div class="px-6 py-4 border-t border-ink-border text-xs text-parchment-muted">
+      <div class="flex items-center gap-2">
+        <span id="conn-dot" class="w-2 h-2 rounded-full bg-parchment-muted"></span>
+        <span id="conn-label">Verificando conexión…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile top bar -->
+  <div class="md:hidden fixed top-0 inset-x-0 z-30 bg-ink-panel border-b border-ink-border flex items-center justify-between px-4 h-14">
+    <p class="font-display text-xl">Catálogo</p>
+    <button id="mobile-menu-btn" class="p-2 -mr-2 text-parchment">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div id="mobile-nav" class="hidden md:hidden fixed inset-0 z-40 bg-ink/95 backdrop-blur-sm pt-14">
+    <nav id="mobile-sidebar-nav" class="px-4 py-5 space-y-1 overflow-y-auto"></nav>
+  </div>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 pt-14 md:pt-0">
+    <header class="border-b border-ink-border bg-ink px-5 md:px-9 py-6 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <p id="page-eyebrow" class="text-xs text-brass mb-1"></p>
+        <h1 id="page-title" class="font-display text-3xl text-parchment"></h1>
+        <p id="page-desc" class="text-sm text-parchment-muted mt-1"></p>
+      </div>
+      <div id="header-actions" class="flex items-center gap-3"></div>
+    </header>
+
+    <div id="view-root" class="px-5 md:px-9 py-7"></div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div id="modal-backdrop" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+  <div class="bg-ink-panel border border-ink-border rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto fade-in">
+    <div class="px-6 py-5 border-b border-ink-border flex items-center justify-between">
+      <h2 id="modal-title" class="font-display text-xl text-parchment"></h2>
+      <button onclick="closeModal()" class="text-parchment-muted hover:text-parchment text-xl leading-none">&times;</button>
+    </div>
+    <form id="modal-form" class="px-6 py-5 space-y-4"></form>
+    <div class="px-6 pb-6 flex items-center justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm text-parchment-muted hover:text-parchment">Cancelar</button>
+      <button type="button" onclick="submitModal()" id="modal-submit-btn" class="px-5 py-2 text-sm font-medium bg-brass text-ink rounded hover:bg-brass-dim transition-colors">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-50 px-4 py-3 rounded-md text-sm font-medium fade-in shadow-lg"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
+const API_BASE = 'http://localhost:5000';
+
+const ICONS = {
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+  book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17Z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>',
+  tag: '<path d="M20 10 12.5 2.5H4v8.5L11.5 19a1.5 1.5 0 0 0 2 0l6.5-6.5a1.5 1.5 0 0 0 0-2Z"/><circle cx="7.5" cy="6.5" r="1"/>',
+  quill: '<path d="M4 20 15 9m0 0c2-2 5-5 5-7 0 0-5 0-7 5-2 2-3 3-3 3"/><path d="M4 20c0-2 .5-5 2-7"/>',
+  copy: '<rect x="6" y="4" width="12" height="16" rx="1"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14c2.5.3 4.5 2.3 4.5 6"/>',
+  card: '<rect x="3" y="6" width="18" height="13" rx="1.5"/><path d="M3 10h18"/><path d="M7 14h4"/>',
+  swap: '<path d="M4 7h14m0 0-4-4m4 4-4 4"/><path d="M20 17H6m0 0 4 4m-4-4 4-4"/>',
+};
+
+function iconSvg(name, extra='') {
+  return `<svg class="${extra}" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
+// entidad -> configuración de recurso REST + formulario
+const ENTITIES = {
+  dashboard: { label:'Inicio', icon:'home', eyebrow:'Panorama general', title:'Inicio', desc:'Estado actual del catálogo y la actividad reciente.' },
+
+  libro: {
+    label:'Libros', icon:'book', endpoint:'/libro', singular:'Libro',
+    eyebrow:'Catálogo', title:'Libros', desc:'Títulos registrados en la biblioteca.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'titulo', label:'Título'},
+      {key:'editorial', label:'Editorial'}, {key:'anio_publicacion', label:'Año'},
+      {key:'categoria_id', label:'Categoría'}, {key:'numero_pagina', label:'Páginas'},
+    ],
+    fields:[
+      {name:'titulo', label:'Título', type:'text', required:true},
+      {name:'editorial', label:'Editorial', type:'text', required:true},
+      {name:'anio_publicacion', label:'Año de publicación', type:'number', required:true},
+      {name:'numero_pagina', label:'Número de páginas', type:'number', required:true},
+      {name:'categoria_id', label:'Categoría', type:'select', related:'categoria', display:c=>c.nombre, required:true},
+    ],
+  },
+
+  categoria: {
+    label:'Categorías', icon:'tag', endpoint:'/categoria', singular:'Categoría',
+    eyebrow:'Catálogo', title:'Categorías', desc:'Clasificación temática de los libros.',
+    columns:[{key:'id', label:'ID'}, {key:'nombre', label:'Nombre'}, {key:'descripcion', label:'Descripción'}],
+    fields:[
+      {name:'nombre', label:'Nombre', type:'text', required:true},
+      {name:'descripcion', label:'Descripción', type:'textarea', required:true},
+    ],
+  },
+
+  autor: {
+    label:'Autores', icon:'quill', endpoint:'/autor', singular:'Autor',
+    eyebrow:'Catálogo', title:'Autores', desc:'Autores asociados a los libros del catálogo.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'nombres', label:'Nombres'}, {key:'apellidos', label:'Apellidos'},
+      {key:'nacionalidad', label:'Nacionalidad'}, {key:'fecha_nac', label:'Nacimiento'},
+    ],
+    fields:[
+      {name:'nombres', label:'Nombres', type:'text', required:true},
+      {name:'apellidos', label:'Apellidos', type:'text', required:true},
+      {name:'nacionalidad', label:'Nacionalidad', type:'text', required:true},
+      {name:'fecha_nac', label:'Fecha de nacimiento', type:'date', required:true},
+    ],
+  },
+
+  ejemplar: {
+    label:'Ejemplares', icon:'copy', endpoint:'/ejemplar', singular:'Ejemplar',
+    eyebrow:'Inventario', title:'Ejemplares', desc:'Copias físicas disponibles de cada libro.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'isbn', label:'ISBN'}, {key:'ubicacion', label:'Ubicación'},
+      {key:'estado_fisico_libro', label:'Estado físico'}, {key:'libro_id', label:'Libro'},
+      {key:'disponible', label:'Disponible', bool:true},
+    ],
+    fields:[
+      {name:'isbn', label:'ISBN', type:'text', required:true},
+      {name:'ubicacion', label:'Ubicación', type:'text', required:true},
+      {name:'estado_fisico_libro', label:'Estado físico', type:'select', options:['Nuevo','Bueno','Regular','Deteriorado'], required:true},
+      {name:'libro_id', label:'Libro', type:'select', related:'libro', display:l=>l.titulo, required:true},
+      {name:'disponible', label:'Disponible', type:'bool', required:true},
+    ],
+  },
+
+  usuario: {
+    label:'Usuarios', icon:'users', endpoint:'/usuario', singular:'Usuario',
+    eyebrow:'Comunidad', title:'Usuarios', desc:'Personas registradas para solicitar préstamos.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'nombres', label:'Nombres'}, {key:'apellidos', label:'Apellidos'},
+      {key:'nro_documento', label:'Documento'}, {key:'correo', label:'Correo'}, {key:'estado', label:'Activo', bool:true},
+    ],
+    fields:[
+      {name:'nombres', label:'Nombres', type:'text', required:true},
+      {name:'apellidos', label:'Apellidos', type:'text', required:true},
+      {name:'nro_documento', label:'N° de documento', type:'text', required:true},
+      {name:'telefono', label:'Teléfono', type:'text', required:true},
+      {name:'correo', label:'Correo', type:'email', required:true},
+      {name:'genero', label:'Género', type:'select', options:['Femenino','Masculino','Otro'], required:true},
+      {name:'estado', label:'Activo', type:'bool', required:true},
+    ],
+  },
+
+  carnet: {
+    label:'Carnets', icon:'card', endpoint:'/carnet', singular:'Carnet',
+    eyebrow:'Comunidad', title:'Carnets', desc:'Credenciales de biblioteca emitidas a usuarios.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'nro_kardex', label:'N° Kárdex'}, {key:'fecha_emision', label:'Emisión'},
+      {key:'fecha_caducidad', label:'Caducidad'}, {key:'estado', label:'Estado'}, {key:'usuario_id', label:'Usuario'},
+    ],
+    fields:[
+      {name:'nro_kardex', label:'N° Kárdex', type:'text', required:true},
+      {name:'fecha_emision', label:'Fecha de emisión', type:'date', required:true},
+      {name:'fecha_caducidad', label:'Fecha de caducidad', type:'date', required:true},
+      {name:'estado', label:'Estado', type:'select', options:['Activo','Vencido','Suspendido'], required:true},
+      {name:'usuario_id', label:'Usuario', type:'select', related:'usuario', display:u=>`${u.nombres} ${u.apellidos}`, required:true},
+    ],
+  },
+
+  prestamo: {
+    label:'Préstamos', icon:'swap', endpoint:'/prestamo', singular:'Préstamo',
+    eyebrow:'Circulación', title:'Préstamos', desc:'Historial y seguimiento de préstamos de ejemplares.',
+    columns:[
+      {key:'id', label:'ID'}, {key:'ejemplar_id', label:'Ejemplar'}, {key:'usuario_id', label:'Usuario'},
+      {key:'fecha_prestamo', label:'Prestado'}, {key:'fecha_devolucion', label:'Vence'},
+      {key:'fecha_devolucion_real', label:'Devuelto'}, {key:'estado_prestamo', label:'Activo', bool:true},
+    ],
+    fields:[
+      {name:'ejemplar_id', label:'Ejemplar', type:'select', related:'ejemplar', display:e=>`#${e.id} · ${e.isbn}`, required:true},
+      {name:'usuario_id', label:'Usuario', type:'select', related:'usuario', display:u=>`${u.nombres} ${u.apellidos}`, required:true},
+      {name:'fecha_prestamo', label:'Fecha de préstamo', type:'date', required:true},
+      {name:'fecha_devolucion', label:'Fecha de devolución prevista', type:'date', required:true},
+      {name:'estado_prestamo', label:'Préstamo activo', type:'bool', required:true},
+    ],
+    hasDevolver:true,
+  },
+};
+
+const ORDER = ['dashboard','libro','categoria','autor','ejemplar','usuario','carnet','prestamo'];
+
+let currentView = 'dashboard';
+let editingId = null;
+let relatedCache = {};
+
+/* =========================================================
+   API HELPERS
+========================================================= */
+async function api(path, opts={}) {
+  const res = await fetch(API_BASE + path, {
+    headers: { 'Content-Type':'application/json' },
+    ...opts,
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} en ${path}`);
+  return res.json();
+}
+
+async function checkConnection() {
+  const dot = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  try {
+    await api('/categoria');
+    dot.className = 'w-2 h-2 rounded-full bg-leather';
+    label.textContent = 'Conectado al servidor';
+  } catch {
+    dot.className = 'w-2 h-2 rounded-full bg-rust';
+    label.textContent = 'Sin conexión al servidor';
+  }
+}
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+function buildNav(containerId, closeOnClick) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = ORDER.map(key => {
+    const e = ENTITIES[key];
+    return `
+      <button data-view="${key}" onclick="goTo('${key}')"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-parchment-muted border border-transparent hover:text-parchment hover:bg-ink-raised transition-colors">
+        <span class="nav-dot w-1.5 h-1.5 rounded-full bg-ink-border shrink-0"></span>
+        ${iconSvg(e.icon, 'shrink-0')}
+        <span>${e.label}</span>
+      </button>`;
+  }).join('');
+}
+
+function setActiveNav() {
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === currentView);
+  });
+}
+
+function goTo(view) {
+  currentView = view;
+  document.getElementById('mobile-nav').classList.add('hidden');
+  setActiveNav();
+  render();
+}
+
+/* =========================================================
+   RENDER — HEADER
+========================================================= */
+function renderHeader() {
+  const e = ENTITIES[currentView];
+  document.getElementById('page-eyebrow').textContent = e.eyebrow;
+  document.getElementById('page-title').textContent = e.title;
+  document.getElementById('page-desc').textContent = e.desc;
+
+  const actions = document.getElementById('header-actions');
+  if (currentView === 'dashboard') { actions.innerHTML=''; return; }
+  actions.innerHTML = `
+    <button onclick="openModal('${currentView}', 'create')"
+      class="flex items-center gap-2 px-4 py-2.5 bg-brass text-ink text-sm font-medium rounded-md hover:bg-brass-dim transition-colors">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo ${e.singular.toLowerCase()}
+    </button>`;
+}
+
+/* =========================================================
+   RENDER — DASHBOARD
+========================================================= */
+async function renderDashboard() {
+  const root = document.getElementById('view-root');
+  root.innerHTML = `<p class="text-parchment-muted text-sm">Cargando panorama…</p>`;
+
+  const countable = ['libro','categoria','autor','ejemplar','usuario','carnet','prestamo'];
+  let counts = {};
+  await Promise.all(countable.map(async key => {
+    try { counts[key] = (await api(ENTITIES[key].endpoint)).length; }
+    catch { counts[key] = null; }
+  }));
+
+  let activos = [], disponibles = [];
+  try { activos = await api('/prestamos/activos'); } catch {}
+  try { disponibles = await api('/ejemplares/disponibles'); } catch {}
+
+  root.innerHTML = `
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      ${countable.map(key => `
+        <div class="border border-ink-border bg-ink-panel rounded-lg px-5 py-4">
+          <div class="flex items-center gap-2 text-parchment-muted mb-3">
+            ${iconSvg(ENTITIES[key].icon)}
+            <span class="text-xs">${ENTITIES[key].label}</span>
+          </div>
+          <p class="font-display text-3xl text-parchment">${counts[key] ?? '—'}</p>
+        </div>`).join('')}
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="border border-ink-border bg-ink-panel rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-ink-border flex items-center justify-between">
+          <h3 class="font-display text-lg text-parchment">Préstamos activos</h3>
+          <button onclick="goTo('prestamo')" class="text-xs text-brass hover:underline">Ver todos</button>
+        </div>
+        <div class="divide-y divide-ink-border max-h-80 overflow-y-auto">
+          ${activos.length ? activos.slice(0,8).map(p => `
+            <div class="px-5 py-3 text-sm flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-parchment truncate">${escapeHtml(p.titulo || '—')}</p>
+                <p class="text-parchment-muted text-xs">${escapeHtml(p.nombres||'')} ${escapeHtml(p.apellidos||'')}</p>
+              </div>
+              <span class="text-xs text-parchment-muted shrink-0">${formatDate(p.fecha_devolucion)}</span>
+            </div>`).join('') : `<p class="px-5 py-6 text-sm text-parchment-muted">No hay préstamos activos.</p>`}
+        </div>
+      </div>
+
+      <div class="border border-ink-border bg-ink-panel rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-ink-border flex items-center justify-between">
+          <h3 class="font-display text-lg text-parchment">Ejemplares disponibles</h3>
+          <button onclick="goTo('ejemplar')" class="text-xs text-brass hover:underline">Ver todos</button>
+        </div>
+        <div class="divide-y divide-ink-border max-h-80 overflow-y-auto">
+          ${disponibles.length ? disponibles.slice(0,8).map(e => `
+            <div class="px-5 py-3 text-sm flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-parchment truncate">${escapeHtml(e.titulo || '—')}</p>
+                <p class="text-parchment-muted text-xs">ISBN ${escapeHtml(e.isbn||'—')} · ${escapeHtml(e.ubicacion||'')}</p>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded bg-leather/15 text-leather shrink-0">Disponible</span>
+            </div>`).join('') : `<p class="px-5 py-6 text-sm text-parchment-muted">No hay ejemplares disponibles.</p>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   RENDER — TABLA GENÉRICA
+========================================================= */
+async function renderTable(view) {
+  const cfg = ENTITIES[view];
+  const root = document.getElementById('view-root');
+  root.innerHTML = `<p class="text-parchment-muted text-sm">Cargando ${cfg.label.toLowerCase()}…</p>`;
+
+  let rows = [];
+  try { rows = await api(cfg.endpoint); }
+  catch (err) {
+    root.innerHTML = `<div class="border border-rust/40 bg-rust/10 text-rust rounded-lg px-5 py-4 text-sm">No se pudo cargar ${cfg.label.toLowerCase()}. Verifica que el servidor esté activo en ${API_BASE}.</div>`;
+    return;
+  }
+
+  if (!rows.length) {
+    root.innerHTML = `
+      <div class="border border-dashed border-ink-border rounded-lg px-8 py-14 text-center">
+        <p class="text-parchment mb-1">Todavía no hay registros aquí.</p>
+        <p class="text-parchment-muted text-sm">Usa "Nuevo ${cfg.singular.toLowerCase()}" para crear el primero.</p>
+      </div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="border border-ink-border bg-ink-panel rounded-lg overflow-x-auto">
+      <table class="w-full text-sm min-w-[720px]">
+        <thead>
+          <tr class="border-b border-ink-border text-left text-parchment-muted text-xs">
+            ${cfg.columns.map(c => `<th class="px-4 py-3 font-medium">${c.label}</th>`).join('')}
+            ${cfg.hasDevolver ? '<th class="px-4 py-3"></th>' : ''}
+            <th class="px-4 py-3 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-border">
+          ${rows.map(r => `
+            <tr class="hover:bg-ink-raised/60 transition-colors">
+              ${cfg.columns.map(c => `<td class="px-4 py-3 text-parchment/90">${renderCell(r[c.key], c)}</td>`).join('')}
+              ${cfg.hasDevolver ? `<td class="px-4 py-3">
+                ${r.estado_prestamo ? `<button onclick="devolverPrestamo(${r.id})" class="text-xs px-2.5 py-1 rounded border border-leather text-leather hover:bg-leather/10">Devolver</button>` : ''}
+              </td>` : ''}
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <button onclick="openModal('${view}','edit',${r.id})" class="text-xs text-brass hover:underline mr-3">Editar</button>
+                <button onclick="deleteItem('${view}',${r.id})" class="text-xs text-rust hover:underline">Eliminar</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderCell(value, col) {
+  if (col.bool) {
+    const on = value === true || value === 1 || value === '1';
+    return `<span class="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded ${on ? 'bg-leather/15 text-leather' : 'bg-rust/15 text-rust'}">
+      <span class="w-1.5 h-1.5 rounded-full ${on ? 'bg-leather' : 'bg-rust'}"></span>${on ? 'Sí' : 'No'}
+    </span>`;
+  }
+  if (value === null || value === undefined || value === '') return '<span class="text-parchment-muted">—</span>';
+  if (/^\d{4}-\d{2}-\d{2}/.test(String(value))) return formatDate(value);
+  return escapeHtml(String(value));
+}
+
+function formatDate(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (isNaN(d)) return escapeHtml(String(v));
+  return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* =========================================================
+   MODAL — CREAR / EDITAR
+========================================================= */
+async function openModal(view, mode, id=null) {
+  const cfg = ENTITIES[view];
+  editingId = mode === 'edit' ? id : null;
+  document.getElementById('modal-title').textContent = mode === 'edit' ? `Editar ${cfg.singular.toLowerCase()}` : `Nuevo ${cfg.singular.toLowerCase()}`;
+
+  let record = {};
+  if (mode === 'edit') {
+    try { const list = await api(`${cfg.endpoint}/${id}`); record = Array.isArray(list) ? list[0] : list; }
+    catch { toast('No se pudo cargar el registro', true); return; }
+  }
+
+  // precargar relaciones necesarias
+  await Promise.all(cfg.fields.filter(f => f.related).map(async f => {
+    if (!relatedCache[f.related]) {
+      try { relatedCache[f.related] = await api(ENTITIES[f.related].endpoint); }
+      catch { relatedCache[f.related] = []; }
+    }
+  }));
+
+  const form = document.getElementById('modal-form');
+  form.dataset.view = view;
+  form.innerHTML = cfg.fields.map(f => fieldHtml(f, record)).join('');
+
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.add('flex');
+}
+
+function fieldHtml(f, record) {
+  const val = record?.[f.name];
+  const base = 'w-full bg-ink-raised border border-ink-border rounded-md px-3 py-2 text-sm text-parchment placeholder:text-parchment-muted/60';
+
+  if (f.type === 'select' && f.related) {
+    const opts = (relatedCache[f.related] || []).map(item =>
+      `<option value="${item.id}" ${String(val)===String(item.id)?'selected':''}>${escapeHtml(f.display(item))}</option>`
+    ).join('');
+    return labelWrap(f, `<select name="${f.name}" class="${base}" ${f.required?'required':''}><option value="">Seleccionar…</option>${opts}</select>`);
+  }
+  if (f.type === 'select') {
+    const opts = f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+    return labelWrap(f, `<select name="${f.name}" class="${base}" ${f.required?'required':''}><option value="">Seleccionar…</option>${opts}</select>`);
+  }
+  if (f.type === 'bool') {
+    const on = val === true || val === 1 || val === '1';
+    return labelWrap(f, `
+      <select name="${f.name}" class="${base}" ${f.required?'required':''}>
+        <option value="true" ${on?'selected':''}>Sí</option>
+        <option value="false" ${!on?'selected':''}>No</option>
+      </select>`);
+  }
+  if (f.type === 'textarea') {
+    return labelWrap(f, `<textarea name="${f.name}" rows="3" class="${base}" ${f.required?'required':''}>${val!=null?escapeHtml(String(val)):''}</textarea>`);
+  }
+  let inputVal = val ?? '';
+  if (f.type === 'date' && inputVal) inputVal = String(inputVal).slice(0,10);
+  return labelWrap(f, `<input type="${f.type}" name="${f.name}" value="${escapeHtml(String(inputVal))}" class="${base}" ${f.required?'required':''} />`);
+}
+
+function labelWrap(f, inputHtml) {
+  return `<div><label class="block text-xs text-parchment-muted mb-1.5">${f.label}</label>${inputHtml}</div>`;
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  document.getElementById('modal-backdrop').classList.remove('flex');
+}
+
+async function submitModal() {
+  const form = document.getElementById('modal-form');
+  if (!form.reportValidity()) return;
+  const view = form.dataset.view;
+  const cfg = ENTITIES[view];
+  const data = {};
+  cfg.fields.forEach(f => {
+    const raw = new FormData(form).get(f.name);
+    if (f.type === 'bool') data[f.name] = raw === 'true';
+    else if (f.type === 'number') data[f.name] = raw === '' ? null : Number(raw);
+    else data[f.name] = raw;
+  });
+
+  const btn = document.getElementById('modal-submit-btn');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    if (editingId) await api(`${cfg.endpoint}/${editingId}`, { method:'PUT', body: JSON.stringify(data) });
+    else await api(cfg.endpoint, { method:'POST', body: JSON.stringify(data) });
+    closeModal();
+    toast(editingId ? `${cfg.singular} actualizado` : `${cfg.singular} registrado`);
+    relatedCache = {};
+    renderTable(view);
+  } catch {
+    toast(`No se pudo guardar el ${cfg.singular.toLowerCase()}`, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar';
+  }
+}
+
+async function deleteItem(view, id) {
+  const cfg = ENTITIES[view];
+  if (!confirm(`¿Eliminar este ${cfg.singular.toLowerCase()}? Esta acción no se puede deshacer.`)) return;
+  try {
+    await api(`${cfg.endpoint}/${id}`, { method:'DELETE' });
+    toast(`${cfg.singular} eliminado`);
+    renderTable(view);
+  } catch {
+    toast(`No se pudo eliminar el ${cfg.singular.toLowerCase()}`, true);
+  }
+}
+
+async function devolverPrestamo(id) {
+  try {
+    await api(`/prestamo/${id}/devolver`, { method:'PUT' });
+    toast('Libro devuelto correctamente');
+    renderTable('prestamo');
+  } catch {
+    toast('No se pudo registrar la devolución', true);
+  }
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+let toastTimer;
+function toast(msg, isError=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `fixed bottom-6 right-6 z-50 px-4 py-3 rounded-md text-sm font-medium fade-in shadow-lg ${isError ? 'bg-rust text-ink' : 'bg-leather text-ink'}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+function render() {
+  renderHeader();
+  if (currentView === 'dashboard') renderDashboard();
+  else renderTable(currentView);
+}
+
+document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+  document.getElementById('mobile-nav').classList.toggle('hidden');
+});
+
+buildNav('sidebar-nav');
+buildNav('mobile-sidebar-nav');
+setActiveNav();
+checkConnection();
+render();
+</script>
+</body>
+</html>

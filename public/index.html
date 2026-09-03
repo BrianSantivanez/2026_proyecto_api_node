@@ -1,0 +1,3610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Biblioteca | Sistema de Gestión</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #374151 #111827;
+        }
+
+        body {
+            background:
+                radial-gradient(
+                    circle at top right,
+                    rgba(79, 70, 229, 0.12),
+                    transparent 30%
+                ),
+                #0b1120;
+        }
+
+        .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,.06);
+        }
+
+        .sidebar-item {
+            transition: all .2s ease;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(99, 102, 241, .12);
+            color: #a5b4fc;
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(
+                90deg,
+                rgba(99,102,241,.25),
+                rgba(99,102,241,.08)
+            );
+            color: #a5b4fc;
+            border-left: 3px solid #6366f1;
+        }
+
+        .card-hover {
+            transition: transform .2s ease, border-color .2s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99,102,241,.35);
+        }
+
+        .modal {
+            animation: modalIn .2s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.96) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .toast {
+            animation: toastIn .3s ease-out;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .loader {
+            border: 3px solid #374151;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        table {
+            min-width: 700px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        input,
+        select,
+        textarea {
+            color-scheme: dark;
+        }
+    </style>
+</head>
+
+<body class="dark text-gray-200 min-h-screen">
+
+<div class="flex min-h-screen">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar"
+           class="fixed lg:static z-50 inset-y-0 left-0 w-72
+                  bg-gray-950/95 backdrop-blur-xl
+                  border-r border-gray-800
+                  transform -translate-x-full lg:translate-x-0
+                  transition-transform duration-300">
+
+        <div class="h-full flex flex-col">
+
+            <!-- LOGO -->
+            <div class="h-20 flex items-center px-6 border-b border-gray-800">
+                <div class="w-11 h-11 rounded-xl
+                            bg-gradient-to-br from-indigo-500 to-purple-600
+                            flex items-center justify-center
+                            shadow-lg shadow-indigo-500/20">
+
+                    <svg class="w-6 h-6 text-white"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 6.253v13m0-13C10.832 5.477
+                              9.246 5 7.5 5S4.168 5.477 3 6.253v13
+                              C4.168 18.477 5.754 18 7.5 18s3.332.477
+                              4.5 1.253m0-13C13.168 5.477
+                              14.754 5 16.5 5c1.747 0 3.332.477
+                              4.5 1.253v13C19.832 18.477
+                              18.247 18 16.5 18c-1.746 0-3.332.477
+                              -4.5 1.253"/>
+                    </svg>
+                </div>
+
+                <div class="ml-3">
+                    <h1 class="font-bold text-white text-lg">
+                        Biblio<span class="text-indigo-400">Admin</span>
+                    </h1>
+                    <p class="text-xs text-gray-500">
+                        Sistema de biblioteca
+                    </p>
+                </div>
+            </div>
+
+            <!-- MENU -->
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+
+                <p class="px-3 pt-2 pb-3 text-xs font-semibold
+                          uppercase tracking-wider text-gray-600">
+                    Principal
+                </p>
+
+                <button onclick="showSection('dashboard')"
+                        data-section="dashboard"
+                        class="sidebar-item active w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>📊</span>
+                    Dashboard
+                </button>
+
+                <button onclick="showSection('libros')"
+                        data-section="libros"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>📚</span>
+                    Libros
+                </button>
+
+                <button onclick="showSection('categorias')"
+                        data-section="categorias"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>🏷️</span>
+                    Categorías
+                </button>
+
+                <button onclick="showSection('autores')"
+                        data-section="autores"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>✍️</span>
+                    Autores
+                </button>
+
+                <button onclick="showSection('ejemplares')"
+                        data-section="ejemplares"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>📖</span>
+                    Ejemplares
+                </button>
+
+                <p class="px-3 pt-6 pb-3 text-xs font-semibold
+                          uppercase tracking-wider text-gray-600">
+                    Usuarios
+                </p>
+
+                <button onclick="showSection('usuarios')"
+                        data-section="usuarios"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>👥</span>
+                    Usuarios
+                </button>
+
+                <button onclick="showSection('carnets')"
+                        data-section="carnets"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>🪪</span>
+                    Carnets
+                </button>
+
+                <button onclick="showSection('prestamos')"
+                        data-section="prestamos"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>🔄</span>
+                    Préstamos
+                </button>
+
+                <p class="px-3 pt-6 pb-3 text-xs font-semibold
+                          uppercase tracking-wider text-gray-600">
+                    Relaciones y consultas
+                </p>
+
+                <button onclick="showSection('autorLibro')"
+                        data-section="autorLibro"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>🔗</span>
+                    Autor - Libro
+                </button>
+
+                <button onclick="showSection('consultas')"
+                        data-section="consultas"
+                        class="sidebar-item w-full flex items-center
+                               gap-3 px-3 py-3 rounded-lg text-sm">
+                    <span>📈</span>
+                    Consultas
+                </button>
+
+            </nav>
+
+            <!-- FOOTER SIDEBAR -->
+            <div class="p-4 border-t border-gray-800">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-900">
+                    <div class="w-9 h-9 rounded-full
+                                bg-indigo-600 flex items-center justify-center">
+                        A
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white">
+                            Administrador
+                        </p>
+                        <p class="text-xs text-gray-500 truncate">
+                            Sistema Biblioteca
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- OVERLAY MOBILE -->
+    <div id="sidebarOverlay"
+         onclick="toggleSidebar()"
+         class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden">
+    </div>
+
+
+    <!-- MAIN -->
+    <main class="flex-1 min-w-0">
+
+        <!-- TOPBAR -->
+        <header class="h-20 border-b border-gray-800 bg-gray-950/60
+                       backdrop-blur-xl sticky top-0 z-30">
+
+            <div class="h-full px-4 sm:px-6 lg:px-8 flex items-center gap-4">
+
+                <button onclick="toggleSidebar()"
+                        class="lg:hidden p-2 rounded-lg
+                               hover:bg-gray-800">
+                    ☰
+                </button>
+
+                <div class="flex-1">
+                    <h2 id="pageTitle"
+                        class="text-xl font-bold text-white">
+                        Dashboard
+                    </h2>
+
+                    <p id="pageDescription"
+                       class="text-xs text-gray-500 hidden sm:block">
+                        Resumen general del sistema
+                    </p>
+                </div>
+
+                <button onclick="loadDashboard()"
+                        class="p-2.5 rounded-xl border border-gray-700
+                               hover:bg-gray-800 transition"
+                        title="Actualizar">
+
+                    <svg class="w-5 h-5"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M4 4v5h.582m15.356 2A8.001
+                              8.001 0 004.582 9m0 0H9m11 11v-5h-.581
+                              m0 0a8.003 8.003 0 01-15.357-2m15.357
+                              2H15"/>
+                    </svg>
+                </button>
+
+            </div>
+        </header>
+
+
+        <!-- CONTENT -->
+        <div class="p-4 sm:p-6 lg:p-8">
+
+
+            <!-- DASHBOARD -->
+            <section id="section-dashboard" class="section">
+
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold text-white">
+                        Bienvenido al sistema 👋
+                    </h3>
+                    <p class="text-gray-500 mt-1">
+                        Administra todos los recursos de tu biblioteca.
+                    </p>
+                </div>
+
+
+                <!-- STATS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2
+                            xl:grid-cols-4 gap-4 mb-8">
+
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center justify-between">
+
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Libros
+                                </p>
+
+                                <p id="statLibros"
+                                   class="text-3xl font-bold text-white mt-1">
+                                    —
+                                </p>
+                            </div>
+
+                            <div class="w-12 h-12 rounded-xl
+                                        bg-indigo-500/10
+                                        flex items-center justify-center">
+                                📚
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center justify-between">
+
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Usuarios
+                                </p>
+
+                                <p id="statUsuarios"
+                                   class="text-3xl font-bold text-white mt-1">
+                                    —
+                                </p>
+                            </div>
+
+                            <div class="w-12 h-12 rounded-xl
+                                        bg-blue-500/10
+                                        flex items-center justify-center">
+                                👥
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center justify-between">
+
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Ejemplares disponibles
+                                </p>
+
+                                <p id="statDisponibles"
+                                   class="text-3xl font-bold text-white mt-1">
+                                    —
+                                </p>
+                            </div>
+
+                            <div class="w-12 h-12 rounded-xl
+                                        bg-emerald-500/10
+                                        flex items-center justify-center">
+                                📖
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center justify-between">
+
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Préstamos activos
+                                </p>
+
+                                <p id="statPrestamos"
+                                   class="text-3xl font-bold text-white mt-1">
+                                    —
+                                </p>
+                            </div>
+
+                            <div class="w-12 h-12 rounded-xl
+                                        bg-amber-500/10
+                                        flex items-center justify-center">
+                                🔄
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- DASHBOARD CONTENT -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <!-- PRESTAMOS -->
+                    <div class="glass rounded-2xl overflow-hidden">
+
+                        <div class="p-5 border-b border-gray-800
+                                    flex items-center justify-between">
+
+                            <div>
+                                <h3 class="font-semibold text-white">
+                                    Préstamos activos
+                                </h3>
+
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Libros actualmente prestados
+                                </p>
+                            </div>
+
+                            <button onclick="showSection('prestamos')"
+                                    class="text-xs text-indigo-400
+                                           hover:text-indigo-300">
+                                Ver todos →
+                            </button>
+                        </div>
+
+                        <div id="dashboardPrestamos"
+                             class="divide-y divide-gray-800">
+                        </div>
+
+                    </div>
+
+
+                    <!-- DISPONIBLES -->
+                    <div class="glass rounded-2xl overflow-hidden">
+
+                        <div class="p-5 border-b border-gray-800
+                                    flex items-center justify-between">
+
+                            <div>
+                                <h3 class="font-semibold text-white">
+                                    Ejemplares disponibles
+                                </h3>
+
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Disponibles para préstamo
+                                </p>
+                            </div>
+
+                            <button onclick="showSection('ejemplares')"
+                                    class="text-xs text-indigo-400
+                                           hover:text-indigo-300">
+                                Ver todos →
+                            </button>
+                        </div>
+
+                        <div id="dashboardDisponibles"
+                             class="divide-y divide-gray-800">
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- LIBROS -->
+            <section id="section-libros" class="section hidden">
+
+                <div id="librosContent"></div>
+
+            </section>
+
+
+            <!-- CATEGORIAS -->
+            <section id="section-categorias" class="section hidden">
+
+                <div id="categoriasContent"></div>
+
+            </section>
+
+
+            <!-- AUTORES -->
+            <section id="section-autores" class="section hidden">
+
+                <div id="autoresContent"></div>
+
+            </section>
+
+
+            <!-- EJEMPLARES -->
+            <section id="section-ejemplares" class="section hidden">
+
+                <div id="ejemplaresContent"></div>
+
+            </section>
+
+
+            <!-- USUARIOS -->
+            <section id="section-usuarios" class="section hidden">
+
+                <div id="usuariosContent"></div>
+
+            </section>
+
+
+            <!-- CARNETS -->
+            <section id="section-carnets" class="section hidden">
+
+                <div id="carnetsContent"></div>
+
+            </section>
+
+
+            <!-- PRESTAMOS -->
+            <section id="section-prestamos" class="section hidden">
+
+                <div id="prestamosContent"></div>
+
+            </section>
+
+
+            <!-- AUTOR LIBRO -->
+            <section id="section-autorLibro" class="section hidden">
+
+                <div id="autorLibroContent"></div>
+
+            </section>
+
+
+            <!-- CONSULTAS -->
+            <section id="section-consultas" class="section hidden">
+
+                <div id="consultasContent"></div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- MODAL -->
+<div id="modal"
+     class="fixed inset-0 z-[100] hidden
+            bg-black/70 backdrop-blur-sm
+            items-center justify-center p-4">
+
+    <div class="modal glass rounded-2xl w-full max-w-2xl
+                max-h-[90vh] overflow-y-auto">
+
+        <div class="flex items-center justify-between
+                    p-5 border-b border-gray-800">
+
+            <div>
+                <h3 id="modalTitle"
+                    class="text-lg font-bold text-white">
+                    Nuevo registro
+                </h3>
+
+                <p id="modalSubtitle"
+                   class="text-xs text-gray-500 mt-1">
+                </p>
+            </div>
+
+            <button onclick="closeModal()"
+                    class="w-9 h-9 rounded-lg hover:bg-gray-800
+                           text-gray-400 hover:text-white">
+                ✕
+            </button>
+
+        </div>
+
+        <form id="modalForm" class="p-5">
+
+            <div id="modalFields"
+                 class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6 pt-5
+                        border-t border-gray-800">
+
+                <button type="button"
+                        onclick="closeModal()"
+                        class="px-4 py-2.5 rounded-xl
+                               border border-gray-700
+                               text-gray-300 hover:bg-gray-800">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-xl
+                               bg-indigo-600 hover:bg-indigo-500
+                               text-white font-medium">
+                    Guardar
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- TOAST -->
+<div id="toastContainer"
+     class="fixed top-5 right-5 z-[200] space-y-3
+            w-[calc(100%-40px)] sm:w-96">
+</div>
+
+
+<script>
+
+    // ============================================================
+    // CONFIGURACIÓN
+    // ============================================================
+
+    const API_URL = "http://localhost:5000";
+
+
+    // ============================================================
+    // ESTADO
+    // ============================================================
+
+    let currentSection = "dashboard";
+    let editingId = null;
+    let currentEntity = null;
+
+    let cache = {
+        libros: [],
+        categorias: [],
+        autores: [],
+        ejemplares: [],
+        usuarios: [],
+        carnets: [],
+        prestamos: [],
+        autorLibro: []
+    };
+
+
+    // ============================================================
+    // CONFIGURACIÓN DE SECCIONES
+    // ============================================================
+
+    const sectionInfo = {
+        dashboard: {
+            title: "Dashboard",
+            description: "Resumen general del sistema"
+        },
+
+        libros: {
+            title: "Libros",
+            description: "Gestiona el catálogo de libros"
+        },
+
+        categorias: {
+            title: "Categorías",
+            description: "Gestiona las categorías de libros"
+        },
+
+        autores: {
+            title: "Autores",
+            description: "Gestiona los autores"
+        },
+
+        ejemplares: {
+            title: "Ejemplares",
+            description: "Gestiona las copias físicas de los libros"
+        },
+
+        usuarios: {
+            title: "Usuarios",
+            description: "Gestiona los usuarios de la biblioteca"
+        },
+
+        carnets: {
+            title: "Carnets",
+            description: "Gestiona los carnets de los usuarios"
+        },
+
+        prestamos: {
+            title: "Préstamos",
+            description: "Gestiona los préstamos y devoluciones"
+        },
+
+        autorLibro: {
+            title: "Autor - Libro",
+            description: "Gestiona la relación entre autores y libros"
+        },
+
+        consultas: {
+            title: "Consultas",
+            description: "Consultas especiales de la biblioteca"
+        }
+    };
+
+
+    // ============================================================
+    // API
+    // ============================================================
+
+    async function api(endpoint, options = {}) {
+
+        try {
+
+            const response = await fetch(API_URL + endpoint, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(options.headers || {})
+                },
+                ...options
+            });
+
+            const contentType =
+                response.headers.get("content-type") || "";
+
+            const data = contentType.includes("application/json")
+                ? await response.json()
+                : await response.text();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data?.mensaje ||
+                    data?.message ||
+                    `Error HTTP ${response.status}`
+                );
+            }
+
+            return data;
+
+        } catch (error) {
+
+            console.error(error);
+
+            showToast(
+                error.message || "Error de conexión con el servidor",
+                "error"
+            );
+
+            throw error;
+        }
+    }
+
+
+    // ============================================================
+    // NAVEGACIÓN
+    // ============================================================
+
+    function showSection(section) {
+
+        currentSection = section;
+
+        document.querySelectorAll(".section").forEach(el => {
+            el.classList.add("hidden");
+        });
+
+        const target =
+            document.getElementById(`section-${section}`);
+
+        if (target) {
+            target.classList.remove("hidden");
+        }
+
+        document.querySelectorAll(".sidebar-item").forEach(item => {
+            item.classList.remove("active");
+        });
+
+        const active =
+            document.querySelector(
+                `[data-section="${section}"]`
+            );
+
+        if (active) {
+            active.classList.add("active");
+        }
+
+        document.getElementById("pageTitle").textContent =
+            sectionInfo[section]?.title || section;
+
+        document.getElementById("pageDescription").textContent =
+            sectionInfo[section]?.description || "";
+
+        if (window.innerWidth < 1024) {
+            closeSidebar();
+        }
+
+        loadSection(section);
+    }
+
+
+    function toggleSidebar() {
+
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        sidebar.classList.toggle("-translate-x-full");
+        overlay.classList.toggle("hidden");
+    }
+
+
+    function closeSidebar() {
+
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+    }
+
+
+    // ============================================================
+    // CARGAR SECCIÓN
+    // ============================================================
+
+    async function loadSection(section) {
+
+        switch (section) {
+
+            case "dashboard":
+                await loadDashboard();
+                break;
+
+            case "libros":
+                await loadLibros();
+                break;
+
+            case "categorias":
+                await loadCategorias();
+                break;
+
+            case "autores":
+                await loadAutores();
+                break;
+
+            case "ejemplares":
+                await loadEjemplares();
+                break;
+
+            case "usuarios":
+                await loadUsuarios();
+                break;
+
+            case "carnets":
+                await loadCarnets();
+                break;
+
+            case "prestamos":
+                await loadPrestamos();
+                break;
+
+            case "autorLibro":
+                await loadAutorLibro();
+                break;
+
+            case "consultas":
+                loadConsultas();
+                break;
+        }
+    }
+
+
+    // ============================================================
+    // DASHBOARD
+    // ============================================================
+
+    async function loadDashboard() {
+
+        try {
+
+            const [
+                libros,
+                usuarios,
+                disponibles,
+                prestamos
+            ] = await Promise.all([
+                api("/libro"),
+                api("/usuario"),
+                api("/ejemplares/disponibles"),
+                api("/prestamos/activos")
+            ]);
+
+            cache.libros = libros;
+            cache.usuarios = usuarios;
+
+            document.getElementById("statLibros").textContent =
+                libros.length;
+
+            document.getElementById("statUsuarios").textContent =
+                usuarios.length;
+
+            document.getElementById("statDisponibles").textContent =
+                disponibles.length;
+
+            document.getElementById("statPrestamos").textContent =
+                prestamos.length;
+
+
+            // Préstamos
+
+            const prestamosContainer =
+                document.getElementById("dashboardPrestamos");
+
+            if (!prestamos.length) {
+
+                prestamosContainer.innerHTML = emptyState(
+                    "No hay préstamos activos"
+                );
+
+            } else {
+
+                prestamosContainer.innerHTML =
+                    prestamos.slice(0, 5).map(p => `
+                        <div class="p-4 flex items-center gap-4">
+
+                            <div class="w-10 h-10 rounded-xl
+                                        bg-amber-500/10
+                                        flex items-center justify-center">
+                                📖
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+
+                                <p class="text-sm font-medium text-white
+                                          truncate">
+                                    ${escapeHtml(p.titulo)}
+                                </p>
+
+                                <p class="text-xs text-gray-500">
+                                    ${escapeHtml(p.nombres)}
+                                    ${escapeHtml(p.apellidos)}
+                                </p>
+
+                            </div>
+
+                            <span class="text-xs text-amber-400">
+                                ${formatDate(p.fecha_devolucion)}
+                            </span>
+
+                        </div>
+                    `).join("");
+            }
+
+
+            // Disponibles
+
+            const disponiblesContainer =
+                document.getElementById("dashboardDisponibles");
+
+            if (!disponibles.length) {
+
+                disponiblesContainer.innerHTML =
+                    emptyState("No hay ejemplares disponibles");
+
+            } else {
+
+                disponiblesContainer.innerHTML =
+                    disponibles.slice(0, 5).map(e => `
+                        <div class="p-4 flex items-center gap-4">
+
+                            <div class="w-10 h-10 rounded-xl
+                                        bg-emerald-500/10
+                                        flex items-center justify-center">
+                                📚
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+
+                                <p class="text-sm font-medium text-white
+                                          truncate">
+                                    ${escapeHtml(e.titulo)}
+                                </p>
+
+                                <p class="text-xs text-gray-500">
+                                    ISBN: ${escapeHtml(e.isbn)}
+                                </p>
+
+                            </div>
+
+                            <span class="text-xs text-emerald-400">
+                                Disponible
+                            </span>
+
+                        </div>
+                    `).join("");
+            }
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+
+    // ============================================================
+    // LIBROS
+    // ============================================================
+
+    async function loadLibros() {
+
+        const data = await api("/libros-detalle");
+
+        cache.libros = data;
+
+        document.getElementById("librosContent").innerHTML =
+            entityPage({
+                title: "Catálogo de libros",
+                description:
+                    "Administra todos los libros registrados.",
+                buttonText: "Nuevo libro",
+                buttonAction: "openLibroModal()",
+                searchPlaceholder: "Buscar libro...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Título")}
+                                ${th("Año")}
+                                ${th("Editorial")}
+                                ${th("Páginas")}
+                                ${th("Categoría")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="librosTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        renderLibros(data);
+    }
+
+
+    function renderLibros(data) {
+
+        const tbody =
+            document.getElementById("librosTableBody");
+
+        tbody.innerHTML = data.map(libro => `
+            <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                <td class="px-4 py-4 text-gray-500">
+                    #${libro.id}
+                </td>
+
+                <td class="px-4 py-4">
+                    <div class="font-medium text-white">
+                        ${escapeHtml(libro.titulo)}
+                    </div>
+                </td>
+
+                <td class="px-4 py-4 text-gray-400">
+                    ${libro.anio_publicacion}
+                </td>
+
+                <td class="px-4 py-4 text-gray-400">
+                    ${escapeHtml(libro.editorial)}
+                </td>
+
+                <td class="px-4 py-4 text-gray-400">
+                    ${libro.numero_pagina}
+                </td>
+
+                <td class="px-4 py-4">
+                    <span class="px-2.5 py-1 rounded-full
+                                 bg-indigo-500/10 text-indigo-400
+                                 text-xs">
+                        ${escapeHtml(libro.categoria)}
+                    </span>
+                </td>
+
+                <td class="px-4 py-4">
+                    ${actions(
+                        `editLibro(${libro.id})`,
+                        `deleteLibro(${libro.id})`
+                    )}
+                </td>
+
+            </tr>
+        `).join("");
+    }
+
+
+    async function openLibroModal(id = null) {
+
+        const categorias = await api("/categoria");
+
+        editingId = id;
+
+        let libro = null;
+
+        if (id) {
+            libro = await api(`/libro/${id}`);
+            libro = libro[0];
+        }
+
+        openModal(
+            id ? "Editar libro" : "Nuevo libro",
+            "Completa los datos del libro",
+            [
+                field(
+                    "titulo",
+                    "Título",
+                    libro?.titulo || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "anio_publicacion",
+                    "Año de publicación",
+                    libro?.anio_publicacion || "",
+                    "number",
+                    true
+                ),
+
+                field(
+                    "editorial",
+                    "Editorial",
+                    libro?.editorial || "",
+                    "text",
+                    true
+                ),
+
+                selectField(
+                    "categoria_id",
+                    "Categoría",
+                    categorias,
+                    libro?.categoria_id
+                ),
+
+                field(
+                    "numero_pagina",
+                    "Número de páginas",
+                    libro?.numero_pagina || "",
+                    "number",
+                    true
+                )
+            ]
+        );
+
+        currentEntity = "libro";
+    }
+
+
+    async function saveLibro(formData) {
+
+        const body = {
+            titulo: formData.titulo,
+            anio_publicacion: Number(formData.anio_publicacion),
+            editorial: formData.editorial,
+            categoria_id: Number(formData.categoria_id),
+            numero_pagina: Number(formData.numero_pagina)
+        };
+
+        if (editingId) {
+
+            await api(`/libro/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Libro modificado correctamente");
+
+        } else {
+
+            await api("/libro", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Libro registrado correctamente");
+        }
+
+        closeModal();
+        await loadLibros();
+    }
+
+
+    async function editLibro(id) {
+        await openLibroModal(id);
+    }
+
+
+    async function deleteLibro(id) {
+
+        if (!confirm("¿Eliminar este libro?")) return;
+
+        await api(`/libro/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Libro eliminado correctamente");
+        loadLibros();
+    }
+
+
+    // ============================================================
+    // CATEGORÍAS
+    // ============================================================
+
+    async function loadCategorias() {
+
+        const data = await api("/categoria");
+
+        cache.categorias = data;
+
+        document.getElementById("categoriasContent").innerHTML =
+            entityPage({
+                title: "Categorías",
+                description:
+                    "Organiza los libros por categorías.",
+                buttonText: "Nueva categoría",
+                buttonAction: "openCategoriaModal()",
+                searchPlaceholder: "Buscar categoría...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Nombre")}
+                                ${th("Descripción")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="categoriasTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("categoriasTableBody").innerHTML =
+            data.map(c => `
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${c.id}
+                    </td>
+
+                    <td class="px-4 py-4 font-medium text-white">
+                        ${escapeHtml(c.nombre)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(c.descripcion || "—")}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${actions(
+                            `editCategoria(${c.id})`,
+                            `deleteCategoria(${c.id})`
+                        )}
+                    </td>
+
+                </tr>
+            `).join("");
+    }
+
+
+    async function openCategoriaModal(id = null) {
+
+        editingId = id;
+
+        let categoria = null;
+
+        if (id) {
+            const data = await api(`/categoria/${id}`);
+            categoria = data[0];
+        }
+
+        currentEntity = "categoria";
+
+        openModal(
+            id ? "Editar categoría" : "Nueva categoría",
+            "Información de la categoría",
+            [
+                field(
+                    "nombre",
+                    "Nombre",
+                    categoria?.nombre || "",
+                    "text",
+                    true
+                ),
+
+                textareaField(
+                    "descripcion",
+                    "Descripción",
+                    categoria?.descripcion || ""
+                )
+            ]
+        );
+    }
+
+
+    async function saveCategoria(data) {
+
+        const body = {
+            nombre: data.nombre,
+            descripcion: data.descripcion
+        };
+
+        if (editingId) {
+
+            await api(`/categoria/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Categoría modificada");
+
+        } else {
+
+            await api("/categoria", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Categoría registrada");
+        }
+
+        closeModal();
+        loadCategorias();
+    }
+
+
+    async function editCategoria(id) {
+        await openCategoriaModal(id);
+    }
+
+
+    async function deleteCategoria(id) {
+
+        if (!confirm("¿Eliminar esta categoría?")) return;
+
+        await api(`/categoria/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Categoría eliminada");
+        loadCategorias();
+    }
+
+
+    // ============================================================
+    // AUTORES
+    // ============================================================
+
+    async function loadAutores() {
+
+        const data = await api("/autor");
+
+        cache.autores = data;
+
+        document.getElementById("autoresContent").innerHTML =
+            entityPage({
+                title: "Autores",
+                description:
+                    "Administra los autores de la biblioteca.",
+                buttonText: "Nuevo autor",
+                buttonAction: "openAutorModal()",
+                searchPlaceholder: "Buscar autor...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Nombres")}
+                                ${th("Apellidos")}
+                                ${th("Nacionalidad")}
+                                ${th("Fecha nacimiento")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="autoresTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("autoresTableBody").innerHTML =
+            data.map(a => `
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${a.id}
+                    </td>
+
+                    <td class="px-4 py-4 text-white">
+                        ${escapeHtml(a.nombres)}
+                    </td>
+
+                    <td class="px-4 py-4 text-white">
+                        ${escapeHtml(a.apellidos)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(a.nacionalidad)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${formatDate(a.fecha_nac)}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${actions(
+                            `editAutor(${a.id})`,
+                            `deleteAutor(${a.id})`
+                        )}
+                    </td>
+
+                </tr>
+            `).join("");
+    }
+
+
+    async function openAutorModal(id = null) {
+
+        editingId = id;
+
+        let autor = null;
+
+        if (id) {
+            const data = await api(`/autor/${id}`);
+            autor = data[0];
+        }
+
+        currentEntity = "autor";
+
+        openModal(
+            id ? "Editar autor" : "Nuevo autor",
+            "Información del autor",
+            [
+                field(
+                    "nombres",
+                    "Nombres",
+                    autor?.nombres || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "apellidos",
+                    "Apellidos",
+                    autor?.apellidos || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "nacionalidad",
+                    "Nacionalidad",
+                    autor?.nacionalidad || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "fecha_nac",
+                    "Fecha de nacimiento",
+                    autor?.fecha_nac
+                        ? autor.fecha_nac.substring(0,10)
+                        : "",
+                    "date",
+                    true
+                )
+            ]
+        );
+    }
+
+
+    async function saveAutor(data) {
+
+        const body = {
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            nacionalidad: data.nacionalidad,
+            fecha_nac: data.fecha_nac
+        };
+
+        if (editingId) {
+
+            await api(`/autor/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Autor modificado");
+
+        } else {
+
+            await api("/autor", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Autor registrado");
+        }
+
+        closeModal();
+        loadAutores();
+    }
+
+
+    async function editAutor(id) {
+        await openAutorModal(id);
+    }
+
+
+    async function deleteAutor(id) {
+
+        if (!confirm("¿Eliminar este autor?")) return;
+
+        await api(`/autor/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Autor eliminado");
+        loadAutores();
+    }
+
+
+    // ============================================================
+    // EJEMPLARES
+    // ============================================================
+
+    async function loadEjemplares() {
+
+        const data = await api("/ejemplar");
+
+        cache.ejemplares = data;
+
+        document.getElementById("ejemplaresContent").innerHTML =
+            entityPage({
+                title: "Ejemplares",
+                description:
+                    "Administra las copias físicas de los libros.",
+                buttonText: "Nuevo ejemplar",
+                buttonAction: "openEjemplarModal()",
+                searchPlaceholder: "Buscar ejemplar...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("ISBN")}
+                                ${th("Ubicación")}
+                                ${th("Estado físico")}
+                                ${th("Libro")}
+                                ${th("Disponible")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="ejemplaresTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("ejemplaresTableBody").innerHTML =
+            data.map(e => `
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${e.id}
+                    </td>
+
+                    <td class="px-4 py-4 font-mono text-indigo-300">
+                        ${escapeHtml(e.isbn)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(e.ubicacion)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(e.estado_fisico_libro)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        Libro #${e.libro_id}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${statusBadge(e.disponible)}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${actions(
+                            `editEjemplar(${e.id})`,
+                            `deleteEjemplar(${e.id})`
+                        )}
+                    </td>
+
+                </tr>
+            `).join("");
+    }
+
+
+    async function openEjemplarModal(id = null) {
+
+        const libros = await api("/libro");
+
+        editingId = id;
+
+        let ejemplar = null;
+
+        if (id) {
+            const data = await api(`/ejemplar/${id}`);
+            ejemplar = data[0];
+        }
+
+        currentEntity = "ejemplar";
+
+        openModal(
+            id ? "Editar ejemplar" : "Nuevo ejemplar",
+            "Información del ejemplar",
+            [
+                field(
+                    "isbn",
+                    "ISBN",
+                    ejemplar?.isbn || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "ubicacion",
+                    "Ubicación",
+                    ejemplar?.ubicacion || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "estado_fisico_libro",
+                    "Estado físico",
+                    ejemplar?.estado_fisico_libro || "",
+                    "text",
+                    true
+                ),
+
+                selectField(
+                    "libro_id",
+                    "Libro",
+                    libros,
+                    ejemplar?.libro_id,
+                    "titulo"
+                ),
+
+                selectBoolean(
+                    "disponible",
+                    "Disponible",
+                    ejemplar?.disponible
+                )
+            ]
+        );
+    }
+
+
+    async function saveEjemplar(data) {
+
+        const body = {
+            isbn: data.isbn,
+            ubicacion: data.ubicacion,
+            estado_fisico_libro: data.estado_fisico_libro,
+            libro_id: Number(data.libro_id),
+            disponible: Number(data.disponible)
+        };
+
+        if (editingId) {
+
+            await api(`/ejemplar/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Ejemplar modificado");
+
+        } else {
+
+            await api("/ejemplar", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Ejemplar registrado");
+        }
+
+        closeModal();
+        loadEjemplares();
+    }
+
+
+    async function editEjemplar(id) {
+        await openEjemplarModal(id);
+    }
+
+
+    async function deleteEjemplar(id) {
+
+        if (!confirm("¿Eliminar este ejemplar?")) return;
+
+        await api(`/ejemplar/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Ejemplar eliminado");
+        loadEjemplares();
+    }
+
+
+    // ============================================================
+    // USUARIOS
+    // ============================================================
+
+    async function loadUsuarios() {
+
+        const data = await api("/usuario");
+
+        cache.usuarios = data;
+
+        document.getElementById("usuariosContent").innerHTML =
+            entityPage({
+                title: "Usuarios",
+                description:
+                    "Gestiona los usuarios de la biblioteca.",
+                buttonText: "Nuevo usuario",
+                buttonAction: "openUsuarioModal()",
+                searchPlaceholder: "Buscar usuario...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Nombre")}
+                                ${th("Documento")}
+                                ${th("Teléfono")}
+                                ${th("Correo")}
+                                ${th("Género")}
+                                ${th("Estado")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="usuariosTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("usuariosTableBody").innerHTML =
+            data.map(u => `
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${u.id}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        <div class="font-medium text-white">
+                            ${escapeHtml(u.nombres)}
+                            ${escapeHtml(u.apellidos)}
+                        </div>
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(u.nro_documento)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(u.telefono)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(u.correo)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${escapeHtml(u.genero)}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${statusBadge(u.estado)}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${actions(
+                            `editUsuario(${u.id})`,
+                            `deleteUsuario(${u.id})`
+                        )}
+                    </td>
+
+                </tr>
+            `).join("");
+    }
+
+
+    async function openUsuarioModal(id = null) {
+
+        editingId = id;
+
+        let usuario = null;
+
+        if (id) {
+            const data = await api(`/usuario/${id}`);
+            usuario = data[0];
+        }
+
+        currentEntity = "usuario";
+
+        openModal(
+            id ? "Editar usuario" : "Nuevo usuario",
+            "Información del usuario",
+            [
+                field(
+                    "nombres",
+                    "Nombres",
+                    usuario?.nombres || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "apellidos",
+                    "Apellidos",
+                    usuario?.apellidos || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "nro_documento",
+                    "Número de documento",
+                    usuario?.nro_documento || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "telefono",
+                    "Teléfono",
+                    usuario?.telefono || "",
+                    "text"
+                ),
+
+                field(
+                    "correo",
+                    "Correo electrónico",
+                    usuario?.correo || "",
+                    "email",
+                    true
+                ),
+
+                field(
+                    "genero",
+                    "Género",
+                    usuario?.genero || "",
+                    "text"
+                ),
+
+                selectBoolean(
+                    "estado",
+                    "Usuario activo",
+                    usuario?.estado
+                )
+            ]
+        );
+    }
+
+
+    async function saveUsuario(data) {
+
+        const body = {
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            nro_documento: data.nro_documento,
+            telefono: data.telefono,
+            correo: data.correo,
+            genero: data.genero,
+            estado: Number(data.estado)
+        };
+
+        if (editingId) {
+
+            await api(`/usuario/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Usuario modificado");
+
+        } else {
+
+            await api("/usuario", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Usuario registrado");
+        }
+
+        closeModal();
+        loadUsuarios();
+    }
+
+
+    async function editUsuario(id) {
+        await openUsuarioModal(id);
+    }
+
+
+    async function deleteUsuario(id) {
+
+        if (!confirm("¿Eliminar este usuario?")) return;
+
+        await api(`/usuario/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Usuario eliminado");
+        loadUsuarios();
+    }
+
+
+    // ============================================================
+    // CARNETS
+    // ============================================================
+
+    async function loadCarnets() {
+
+        const data = await api("/carnet");
+
+        cache.carnets = data;
+
+        document.getElementById("carnetsContent").innerHTML =
+            entityPage({
+                title: "Carnets",
+                description:
+                    "Administra los carnets de los usuarios.",
+                buttonText: "Nuevo carnet",
+                buttonAction: "openCarnetModal()",
+                searchPlaceholder: "Buscar carnet...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Nro. Kardex")}
+                                ${th("Emisión")}
+                                ${th("Caducidad")}
+                                ${th("Estado")}
+                                ${th("Usuario")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="carnetsTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("carnetsTableBody").innerHTML =
+            data.map(c => `
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${c.id}
+                    </td>
+
+                    <td class="px-4 py-4 font-mono text-indigo-300">
+                        ${escapeHtml(c.nro_kardex)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${formatDate(c.fecha_emision)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${formatDate(c.fecha_caducidad)}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        <span class="px-2.5 py-1 rounded-full
+                                     bg-indigo-500/10 text-indigo-400 text-xs">
+                            ${escapeHtml(c.estado)}
+                        </span>
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        Usuario #${c.usuario_id}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${actions(
+                            `editCarnet(${c.id})`,
+                            `deleteCarnet(${c.id})`
+                        )}
+                    </td>
+
+                </tr>
+            `).join("");
+    }
+
+
+    async function openCarnetModal(id = null) {
+
+        const usuarios = await api("/usuario");
+
+        editingId = id;
+
+        let carnet = null;
+
+        if (id) {
+            const data = await api(`/carnet/${id}`);
+            carnet = data[0];
+        }
+
+        currentEntity = "carnet";
+
+        openModal(
+            id ? "Editar carnet" : "Nuevo carnet",
+            "Información del carnet",
+            [
+                field(
+                    "nro_kardex",
+                    "Número de kardex",
+                    carnet?.nro_kardex || "",
+                    "text",
+                    true
+                ),
+
+                field(
+                    "fecha_emision",
+                    "Fecha de emisión",
+                    carnet?.fecha_emision
+                        ? carnet.fecha_emision.substring(0,10)
+                        : "",
+                    "date",
+                    true
+                ),
+
+                field(
+                    "fecha_caducidad",
+                    "Fecha de caducidad",
+                    carnet?.fecha_caducidad
+                        ? carnet.fecha_caducidad.substring(0,10)
+                        : "",
+                    "date",
+                    true
+                ),
+
+                field(
+                    "estado",
+                    "Estado",
+                    carnet?.estado || "",
+                    "text",
+                    true
+                ),
+
+                selectField(
+                    "usuario_id",
+                    "Usuario",
+                    usuarios,
+                    carnet?.usuario_id,
+                    "nombres",
+                    item => `${item.nombres} ${item.apellidos}`
+                )
+            ]
+        );
+    }
+
+
+    async function saveCarnet(data) {
+
+        const body = {
+            nro_kardex: data.nro_kardex,
+            fecha_emision: data.fecha_emision,
+            fecha_caducidad: data.fecha_caducidad,
+            estado: data.estado,
+            usuario_id: Number(data.usuario_id)
+        };
+
+        if (editingId) {
+
+            await api(`/carnet/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Carnet modificado");
+
+        } else {
+
+            await api("/carnet", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Carnet registrado");
+        }
+
+        closeModal();
+        loadCarnets();
+    }
+
+
+    async function editCarnet(id) {
+        await openCarnetModal(id);
+    }
+
+
+    async function deleteCarnet(id) {
+
+        if (!confirm("¿Eliminar este carnet?")) return;
+
+        await api(`/carnet/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Carnet eliminado");
+        loadCarnets();
+    }
+
+
+    // ============================================================
+    // PRESTAMOS
+    // ============================================================
+
+    async function loadPrestamos() {
+
+        const data = await api("/prestamo");
+
+        cache.prestamos = data;
+
+        document.getElementById("prestamosContent").innerHTML =
+            entityPage({
+                title: "Préstamos",
+                description:
+                    "Administra préstamos y devoluciones.",
+                buttonText: "Nuevo préstamo",
+                buttonAction: "openPrestamoModal()",
+                searchPlaceholder: "Buscar préstamo...",
+                table: `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                ${th("ID")}
+                                ${th("Ejemplar")}
+                                ${th("Usuario")}
+                                ${th("Préstamo")}
+                                ${th("Devolución")}
+                                ${th("Devolución real")}
+                                ${th("Estado")}
+                                ${th("Acciones")}
+                            </tr>
+                        </thead>
+
+                        <tbody id="prestamosTableBody"></tbody>
+                    </table>
+                `
+            });
+
+        document.getElementById("prestamosTableBody").innerHTML =
+            data.map(p => `
+
+                <tr class="border-t border-gray-800 hover:bg-gray-800/40">
+
+                    <td class="px-4 py-4 text-gray-500">
+                        #${p.id}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        Ejemplar #${p.ejemplar_id}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        Usuario #${p.usuario_id}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${formatDate(p.fecha_prestamo)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${formatDate(p.fecha_devolucion)}
+                    </td>
+
+                    <td class="px-4 py-4 text-gray-400">
+                        ${p.fecha_devolucion_real
+                            ? formatDate(p.fecha_devolucion_real)
+                            : "—"}
+                    </td>
+
+                    <td class="px-4 py-4">
+                        ${p.estado_prestamo
+                            ? `<span class="px-2.5 py-1 rounded-full
+                                      bg-amber-500/10 text-amber-400 text-xs">
+                                    Activo
+                               </span>`
+                            : `<span class="px-2.5 py-1 rounded-full
+                                      bg-emerald-500/10 text-emerald-400 text-xs">
+                                    Devuelto
+                               </span>`
+                        }
+                    </td>
+
+                    <td class="px-4 py-4">
+                        <div class="flex gap-2">
+
+                            ${p.estado_prestamo
+                                ? `
+                                    <button
+                                        onclick="devolverPrestamo(${p.id})"
+                                        class="px-2.5 py-1.5 rounded-lg
+                                               bg-emerald-600/10
+                                               text-emerald-400
+                                               hover:bg-emerald-600/20
+                                               text-xs">
+                                        Devolver
+                                    </button>
+                                  `
+                                : ""
+                            }
+
+                            <button
+                                onclick="editPrestamo(${p.id})"
+                                class="p-2 rounded-lg hover:bg-gray-700
+                                       text-gray-400">
+                                ✏️
+                            </button>
+
+                            <button
+                                onclick="deletePrestamo(${p.id})"
+                                class="p-2 rounded-lg hover:bg-red-500/10
+                                       text-red-400">
+                                🗑️
+                            </button>
+
+                        </div>
+                    </td>
+
+                </tr>
+
+            `).join("");
+    }
+
+
+    async function openPrestamoModal(id = null) {
+
+        const [ejemplares, usuarios] = await Promise.all([
+            api("/ejemplares/disponibles"),
+            api("/usuario")
+        ]);
+
+        editingId = id;
+
+        let prestamo = null;
+
+        if (id) {
+            const data = await api(`/prestamo/${id}`);
+            prestamo = data[0];
+        }
+
+        currentEntity = "prestamo";
+
+        openModal(
+            id ? "Editar préstamo" : "Nuevo préstamo",
+            "Información del préstamo",
+            [
+                selectField(
+                    "ejemplar_id",
+                    "Ejemplar disponible",
+                    ejemplares,
+                    prestamo?.ejemplar_id,
+                    "id",
+                    item => `#${item.id} - ${item.titulo}`
+                ),
+
+                selectField(
+                    "usuario_id",
+                    "Usuario",
+                    usuarios,
+                    prestamo?.usuario_id,
+                    "id",
+                    item => `#${item.id} - ${item.nombres} ${item.apellidos}`
+                ),
+
+                field(
+                    "fecha_prestamo",
+                    "Fecha de préstamo",
+                    prestamo?.fecha_prestamo
+                        ? prestamo.fecha_prestamo.substring(0,10)
+                        : "",
+                    "date",
+                    true
+                ),
+
+                field(
+                    "fecha_devolucion",
+                    "Fecha límite devolución",
+                    prestamo?.fecha_devolucion
+                        ? prestamo.fecha_devolucion.substring(0,10)
+                        : "",
+                    "date",
+                    true
+                ),
+
+                field(
+                    "fecha_devolucion_real",
+                    "Fecha devolución real",
+                    prestamo?.fecha_devolucion_real
+                        ? prestamo.fecha_devolucion_real.substring(0,10)
+                        : "",
+                    "date"
+                ),
+
+                selectBoolean(
+                    "estado_prestamo",
+                    "Préstamo activo",
+                    prestamo?.estado_prestamo
+                )
+            ]
+        );
+    }
+
+
+    async function savePrestamo(data) {
+
+        const body = {
+            ejemplar_id: Number(data.ejemplar_id),
+            usuario_id: Number(data.usuario_id),
+            fecha_prestamo: data.fecha_prestamo,
+            fecha_devolucion: data.fecha_devolucion,
+            fecha_devolucion_real:
+                data.fecha_devolucion_real || null,
+            estado_prestamo:
+                Number(data.estado_prestamo)
+        };
+
+        if (editingId) {
+
+            await api(`/prestamo/${editingId}`, {
+                method: "PUT",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Préstamo modificado");
+
+        } else {
+
+            await api("/prestamo", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+
+            showToast("Préstamo registrado");
+        }
+
+        closeModal();
+        loadPrestamos();
+    }
+
+
+    async function editPrestamo(id) {
+        await openPrestamoModal(id);
+    }
+
+
+    async function deletePrestamo(id) {
+
+        if (!confirm("¿Eliminar este préstamo?")) return;
+
+        await api(`/prestamo/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast("Préstamo eliminado");
+        loadPrestamos();
+    }
+
+
+    async function devolverPrestamo(id) {
+
+        if (!confirm("¿Confirmar devolución del libro?")) return;
+
+        await api(`/prestamo/${id}/devolver`, {
+            method: "PUT",
+            body: JSON.stringify({})
+        });
+
+        showToast(
+            "Libro devuelto correctamente",
+            "success"
+        );
+
+        loadPrestamos();
+    }
+
+
+    // ============================================================
+    // AUTOR - LIBRO
+    // ============================================================
+
+    async function loadAutorLibro() {
+
+        const relaciones = await api("/autor-libro");
+
+        cache.autorLibro = relaciones;
+
+        const [libros, autores] = await Promise.all([
+            api("/libro"),
+            api("/autor")
+        ]);
+
+        document.getElementById("autorLibroContent").innerHTML = `
+
+            <div class="mb-6 flex flex-col sm:flex-row
+                        sm:items-center justify-between gap-4">
+
+                <div>
+                    <h3 class="text-2xl font-bold text-white">
+                        Relación Autor - Libro
+                    </h3>
+
+                    <p class="text-gray-500 mt-1">
+                        Asigna autores a los libros.
+                    </p>
+                </div>
+
+                <button onclick="openRelacionModal()"
+                        class="px-4 py-2.5 rounded-xl
+                               bg-indigo-600 hover:bg-indigo-500
+                               text-white font-medium">
+                    + Asignar autor
+                </button>
+
+            </div>
+
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                <div class="glass rounded-2xl overflow-hidden">
+
+                    <div class="p-5 border-b border-gray-800">
+                        <h3 class="font-semibold text-white">
+                            Relaciones registradas
+                        </h3>
+                    </div>
+
+                    <div class="table-container">
+
+                        <table class="w-full text-sm">
+
+                            <thead>
+                                <tr>
+                                    ${th("Libro")}
+                                    ${th("Autor")}
+                                    ${th("Acción")}
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                ${relaciones.map(r => {
+
+                                    const libro =
+                                        libros.find(
+                                            l => l.id == r.libro_id
+                                        );
+
+                                    const autor =
+                                        autores.find(
+                                            a => a.id == r.autor_id
+                                        );
+
+                                    return `
+
+                                        <tr class="border-t border-gray-800">
+
+                                            <td class="px-4 py-4 text-white">
+                                                ${escapeHtml(
+                                                    libro?.titulo ||
+                                                    `#${r.libro_id}`
+                                                )}
+                                            </td>
+
+                                            <td class="px-4 py-4 text-gray-400">
+                                                ${escapeHtml(
+                                                    autor
+                                                        ? `${autor.nombres} ${autor.apellidos}`
+                                                        : `#${r.autor_id}`
+                                                )}
+                                            </td>
+
+                                            <td class="px-4 py-4">
+
+                                                <button
+                                                    onclick="deleteRelacion(
+                                                        ${r.libro_id},
+                                                        ${r.autor_id}
+                                                    )"
+                                                    class="p-2 rounded-lg
+                                                           hover:bg-red-500/10
+                                                           text-red-400">
+                                                    🗑️
+                                                </button>
+
+                                            </td>
+
+                                        </tr>
+
+                                    `;
+
+                                }).join("")}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+
+                <div class="glass rounded-2xl p-5">
+
+                    <h3 class="font-semibold text-white mb-4">
+                        Libros y sus autores
+                    </h3>
+
+                    <div class="space-y-3">
+
+                        ${libros.map(libro => {
+
+                            const autoresLibro =
+                                relaciones
+                                    .filter(
+                                        r => r.libro_id == libro.id
+                                    )
+                                    .map(r =>
+                                        autores.find(
+                                            a => a.id == r.autor_id
+                                        )
+                                    )
+                                    .filter(Boolean);
+
+                            return `
+
+                                <div class="p-4 rounded-xl bg-gray-900">
+
+                                    <p class="font-medium text-white">
+                                        ${escapeHtml(libro.titulo)}
+                                    </p>
+
+                                    <div class="flex flex-wrap gap-2 mt-2">
+
+                                        ${
+                                            autoresLibro.length
+                                                ? autoresLibro.map(a => `
+                                                    <span class="px-2.5 py-1
+                                                        rounded-full
+                                                        bg-indigo-500/10
+                                                        text-indigo-400
+                                                        text-xs">
+                                                        ${escapeHtml(
+                                                            a.nombres +
+                                                            " " +
+                                                            a.apellidos
+                                                        )}
+                                                    </span>
+                                                  `).join("")
+                                                : `
+                                                    <span class="text-xs
+                                                        text-gray-600">
+                                                        Sin autores asignados
+                                                    </span>
+                                                  `
+                                        }
+
+                                    </div>
+
+                                </div>
+
+                            `;
+
+                        }).join("")}
+
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    async function openRelacionModal() {
+
+        const [libros, autores] = await Promise.all([
+            api("/libro"),
+            api("/autor")
+        ]);
+
+        currentEntity = "autorLibro";
+        editingId = null;
+
+        openModal(
+            "Asignar autor a libro",
+            "Crea una relación entre un autor y un libro",
+            [
+                selectField(
+                    "libro_id",
+                    "Libro",
+                    libros,
+                    null,
+                    "id",
+                    item => `#${item.id} - ${item.titulo}`
+                ),
+
+                selectField(
+                    "autor_id",
+                    "Autor",
+                    autores,
+                    null,
+                    "id",
+                    item => `#${item.id} - ${item.nombres} ${item.apellidos}`
+                )
+            ]
+        );
+    }
+
+
+    async function saveAutorLibro(data) {
+
+        await api("/autor-libro", {
+            method: "POST",
+            body: JSON.stringify({
+                libro_id: Number(data.libro_id),
+                autor_id: Number(data.autor_id)
+            })
+        });
+
+        showToast("Autor asignado correctamente");
+
+        closeModal();
+        loadAutorLibro();
+    }
+
+
+    async function deleteRelacion(libroId, autorId) {
+
+        if (!confirm("¿Eliminar esta relación?")) return;
+
+        await api(`/autor-libro/${libroId}/${autorId}`, {
+            method: "DELETE"
+        });
+
+        showToast("Relación eliminada");
+        loadAutorLibro();
+    }
+
+
+    // ============================================================
+    // CONSULTAS ESPECIALES
+    // ============================================================
+
+    function loadConsultas() {
+
+        document.getElementById("consultasContent").innerHTML = `
+
+            <div class="mb-8">
+
+                <h3 class="text-2xl font-bold text-white">
+                    Consultas especiales
+                </h3>
+
+                <p class="text-gray-500 mt-1">
+                    Explora información relacionada de la biblioteca.
+                </p>
+
+            </div>
+
+
+            <div class="grid grid-cols-1 md:grid-cols-2
+                        xl:grid-cols-3 gap-5">
+
+                ${queryCard(
+                    "📚",
+                    "Libros completos",
+                    "Libros con categoría y autores.",
+                    "loadConsultaLibrosCompleto()"
+                )}
+
+                ${queryCard(
+                    "📖",
+                    "Libros detallados",
+                    "Libros junto con su categoría.",
+                    "loadConsultaLibrosDetalle()"
+                )}
+
+                ${queryCard(
+                    "🔄",
+                    "Préstamos activos",
+                    "Usuarios, libros y fechas de devolución.",
+                    "loadConsultaPrestamosActivos()"
+                )}
+
+                ${queryCard(
+                    "📗",
+                    "Ejemplares disponibles",
+                    "Copias actualmente disponibles.",
+                    "loadConsultaDisponibles()"
+                )}
+
+            </div>
+
+
+            <div id="queryResult"
+                 class="mt-8">
+            </div>
+        `;
+    }
+
+
+    async function loadConsultaLibrosCompleto() {
+
+        const data = await api("/libros-completo");
+
+        renderQueryResult(
+            "Libros completos",
+            data,
+            [
+                "id",
+                "titulo",
+                "anio_publicacion",
+                "editorial",
+                "numero_pagina",
+                "categoria",
+                "nombres",
+                "apellidos"
+            ]
+        );
+    }
+
+
+    async function loadConsultaLibrosDetalle() {
+
+        const data = await api("/libros-detalle");
+
+        renderQueryResult(
+            "Detalle de libros",
+            data,
+            [
+                "id",
+                "titulo",
+                "anio_publicacion",
+                "editorial",
+                "numero_pagina",
+                "categoria"
+            ]
+        );
+    }
+
+
+    async function loadConsultaPrestamosActivos() {
+
+        const data = await api("/prestamos/activos");
+
+        renderQueryResult(
+            "Préstamos activos",
+            data,
+            [
+                "id",
+                "fecha_prestamo",
+                "fecha_devolucion",
+                "nombres",
+                "apellidos",
+                "isbn",
+                "titulo"
+            ]
+        );
+    }
+
+
+    async function loadConsultaDisponibles() {
+
+        const data = await api("/ejemplares/disponibles");
+
+        renderQueryResult(
+            "Ejemplares disponibles",
+            data,
+            [
+                "id",
+                "isbn",
+                "ubicacion",
+                "estado_fisico_libro",
+                "titulo"
+            ]
+        );
+    }
+
+
+    function renderQueryResult(title, data, columns) {
+
+        const container =
+            document.getElementById("queryResult");
+
+        container.innerHTML = `
+
+            <div class="glass rounded-2xl overflow-hidden">
+
+                <div class="p-5 border-b border-gray-800
+                            flex items-center justify-between">
+
+                    <div>
+                        <h3 class="font-semibold text-white">
+                            ${title}
+                        </h3>
+
+                        <p class="text-xs text-gray-500 mt-1">
+                            ${data.length} registros encontrados
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="table-container">
+
+                    <table class="w-full text-sm">
+
+                        <thead>
+                            <tr>
+                                ${columns.map(c => th(c)).join("")}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            ${
+                                data.length
+                                    ? data.map(row => `
+                                        <tr class="border-t border-gray-800
+                                                   hover:bg-gray-800/40">
+
+                                            ${
+                                                columns.map(c => `
+                                                    <td class="px-4 py-4
+                                                               text-gray-400">
+                                                        ${
+                                                            row[c] === null ||
+                                                            row[c] === undefined
+                                                                ? "—"
+                                                                : escapeHtml(
+                                                                    String(row[c])
+                                                                  )
+                                                        }
+                                                    </td>
+                                                `).join("")
+                                            }
+
+                                        </tr>
+                                      `).join("")
+                                    : `
+                                        <tr>
+                                            <td colspan="${columns.length}"
+                                                class="px-4 py-12
+                                                       text-center
+                                                       text-gray-600">
+                                                No se encontraron registros.
+                                            </td>
+                                        </tr>
+                                      `
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    // ============================================================
+    // MODAL
+    // ============================================================
+
+    function openModal(title, subtitle, fields) {
+
+        document.getElementById("modalTitle").textContent = title;
+
+        document.getElementById("modalSubtitle").textContent =
+            subtitle || "";
+
+        document.getElementById("modalFields").innerHTML =
+            fields.join("");
+
+        const modal = document.getElementById("modal");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+    }
+
+
+    function closeModal() {
+
+        const modal = document.getElementById("modal");
+
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+
+        document.getElementById("modalForm").reset();
+
+        editingId = null;
+        currentEntity = null;
+    }
+
+
+    document.getElementById("modalForm")
+        .addEventListener("submit", async function(e) {
+
+            e.preventDefault();
+
+            const formData =
+                new FormData(this);
+
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+
+                switch (currentEntity) {
+
+                    case "libro":
+                        await saveLibro(data);
+                        break;
+
+                    case "categoria":
+                        await saveCategoria(data);
+                        break;
+
+                    case "autor":
+                        await saveAutor(data);
+                        break;
+
+                    case "ejemplar":
+                        await saveEjemplar(data);
+                        break;
+
+                    case "usuario":
+                        await saveUsuario(data);
+                        break;
+
+                    case "carnet":
+                        await saveCarnet(data);
+                        break;
+
+                    case "prestamo":
+                        await savePrestamo(data);
+                        break;
+
+                    case "autorLibro":
+                        await saveAutorLibro(data);
+                        break;
+                }
+
+            } catch (error) {
+                console.error(error);
+            }
+
+        });
+
+
+    // ============================================================
+    // COMPONENTES HTML
+    // ============================================================
+
+    function entityPage({
+        title,
+        description,
+        buttonText,
+        buttonAction,
+        searchPlaceholder,
+        table
+    }) {
+
+        return `
+
+            <div class="mb-6 flex flex-col sm:flex-row
+                        sm:items-center justify-between gap-4">
+
+                <div>
+                    <h3 class="text-2xl font-bold text-white">
+                        ${title}
+                    </h3>
+
+                    <p class="text-gray-500 mt-1">
+                        ${description}
+                    </p>
+                </div>
+
+                <button
+                    onclick="${buttonAction}"
+                    class="px-4 py-2.5 rounded-xl
+                           bg-indigo-600 hover:bg-indigo-500
+                           text-white font-medium
+                           shadow-lg shadow-indigo-500/10">
+
+                    + ${buttonText}
+
+                </button>
+
+            </div>
+
+
+            <div class="glass rounded-2xl overflow-hidden">
+
+                <div class="p-4 border-b border-gray-800">
+
+                    <div class="relative max-w-md">
+
+                        <span class="absolute left-3 top-1/2
+                                     -translate-y-1/2 text-gray-500">
+                            🔎
+                        </span>
+
+                        <input
+                            type="text"
+                            placeholder="${searchPlaceholder}"
+                            oninput="filterTable(this)"
+                            class="w-full pl-10 pr-4 py-2.5
+                                   bg-gray-900 border border-gray-700
+                                   rounded-xl outline-none
+                                   focus:border-indigo-500
+                                   text-sm">
+
+                    </div>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    ${table}
+
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    function queryCard(icon, title, description, action) {
+
+        return `
+
+            <button
+                onclick="${action}"
+                class="glass rounded-2xl p-5 text-left
+                       card-hover hover:border-indigo-500/30">
+
+                <div class="w-12 h-12 rounded-xl
+                            bg-indigo-500/10
+                            flex items-center justify-center
+                            text-2xl mb-4">
+                    ${icon}
+                </div>
+
+                <h3 class="font-semibold text-white">
+                    ${title}
+                </h3>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    ${description}
+                </p>
+
+                <div class="text-xs text-indigo-400 mt-4">
+                    Ejecutar consulta →
+                </div>
+
+            </button>
+
+        `;
+    }
+
+
+    function th(text) {
+
+        return `
+            <th class="px-4 py-3 text-left text-xs
+                       font-semibold uppercase
+                       tracking-wider text-gray-500
+                       bg-gray-900/70">
+                ${text}
+            </th>
+        `;
+    }
+
+
+    function actions(edit, remove) {
+
+        return `
+
+            <div class="flex gap-2">
+
+                <button
+                    onclick="${edit}"
+                    class="p-2 rounded-lg
+                           hover:bg-indigo-500/10
+                           text-indigo-400">
+                    ✏️
+                </button>
+
+                <button
+                    onclick="${remove}"
+                    class="p-2 rounded-lg
+                           hover:bg-red-500/10
+                           text-red-400">
+                    🗑️
+                </button>
+
+            </div>
+        `;
+    }
+
+
+    function field(
+        name,
+        label,
+        value = "",
+        type = "text",
+        required = false
+    ) {
+
+        return `
+
+            <div>
+
+                <label class="block text-sm font-medium
+                              text-gray-300 mb-2">
+                    ${label}
+                </label>
+
+                <input
+                    name="${name}"
+                    type="${type}"
+                    value="${escapeAttr(value)}"
+                    ${required ? "required" : ""}
+                    class="w-full px-3.5 py-2.5
+                           bg-gray-900
+                           border border-gray-700
+                           rounded-xl
+                           outline-none
+                           focus:border-indigo-500
+                           focus:ring-1 focus:ring-indigo-500
+                           text-sm">
+
+            </div>
+        `;
+    }
+
+
+    function textareaField(
+        name,
+        label,
+        value = ""
+    ) {
+
+        return `
+
+            <div class="sm:col-span-2">
+
+                <label class="block text-sm font-medium
+                              text-gray-300 mb-2">
+                    ${label}
+                </label>
+
+                <textarea
+                    name="${name}"
+                    rows="4"
+                    class="w-full px-3.5 py-2.5
+                           bg-gray-900
+                           border border-gray-700
+                           rounded-xl
+                           outline-none
+                           focus:border-indigo-500
+                           focus:ring-1 focus:ring-indigo-500
+                           text-sm">${escapeHtml(value)}</textarea>
+
+            </div>
+        `;
+    }
+
+
+    function selectField(
+        name,
+        label,
+        items,
+        selected = null,
+        valueKey = "id",
+        labelFn = null
+    ) {
+
+        return `
+
+            <div>
+
+                <label class="block text-sm font-medium
+                              text-gray-300 mb-2">
+                    ${label}
+                </label>
+
+                <select
+                    name="${name}"
+                    required
+                    class="w-full px-3.5 py-2.5
+                           bg-gray-900
+                           border border-gray-700
+                           rounded-xl
+                           outline-none
+                           focus:border-indigo-500
+                           focus:ring-1 focus:ring-indigo-500
+                           text-sm">
+
+                    <option value="">
+                        Seleccionar...
+                    </option>
+
+                    ${items.map(item => {
+
+                        const value = item[valueKey];
+
+                        const text =
+                            labelFn
+                                ? labelFn(item)
+                                : item.nombre ||
+                                  item.titulo ||
+                                  item[valueKey];
+
+                        return `
+                            <option
+                                value="${escapeAttr(value)}"
+                                ${String(value) === String(selected)
+                                    ? "selected"
+                                    : ""}>
+                                ${escapeHtml(String(text))}
+                            </option>
+                        `;
+
+                    }).join("")}
+
+                </select>
+
+            </div>
+        `;
+    }
+
+
+    function selectBoolean(
+        name,
+        label,
+        selected = true
+    ) {
+
+        const value =
+            selected === false ||
+            selected === 0 ||
+            selected === "0"
+                ? 0
+                : 1;
+
+        return `
+
+            <div>
+
+                <label class="block text-sm font-medium
+                              text-gray-300 mb-2">
+                    ${label}
+                </label>
+
+                <select
+                    name="${name}"
+                    class="w-full px-3.5 py-2.5
+                           bg-gray-900
+                           border border-gray-700
+                           rounded-xl
+                           outline-none
+                           focus:border-indigo-500
+                           text-sm">
+
+                    <option value="1"
+                        ${value === 1 ? "selected" : ""}>
+                        Sí
+                    </option>
+
+                    <option value="0"
+                        ${value === 0 ? "selected" : ""}>
+                        No
+                    </option>
+
+                </select>
+
+            </div>
+        `;
+    }
+
+
+    function statusBadge(value) {
+
+        const active =
+            value === true ||
+            value === 1 ||
+            value === "1";
+
+        return active
+            ? `
+                <span class="px-2.5 py-1 rounded-full
+                             bg-emerald-500/10
+                             text-emerald-400 text-xs">
+                    Activo
+                </span>
+              `
+            : `
+                <span class="px-2.5 py-1 rounded-full
+                             bg-gray-500/10
+                             text-gray-400 text-xs">
+                    Inactivo
+                </span>
+              `;
+    }
+
+
+    function emptyState(message) {
+
+        return `
+            <div class="p-10 text-center text-gray-600 text-sm">
+                ${message}
+            </div>
+        `;
+    }
+
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+
+    function formatDate(date) {
+
+        if (!date) return "—";
+
+        try {
+
+            return new Date(date).toLocaleDateString(
+                "es-BO",
+                {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric"
+                }
+            );
+
+        } catch {
+            return date;
+        }
+    }
+
+
+    function escapeHtml(value) {
+
+        if (value === null || value === undefined) {
+            return "";
+        }
+
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+
+    function escapeAttr(value) {
+        return escapeHtml(value);
+    }
+
+
+    function filterTable(input) {
+
+        const table =
+            input.closest(".glass")
+                 ?.querySelector("tbody");
+
+        if (!table) return;
+
+        const search =
+            input.value.toLowerCase();
+
+        Array.from(table.rows).forEach(row => {
+
+            row.style.display =
+                row.textContent
+                    .toLowerCase()
+                    .includes(search)
+                    ? ""
+                    : "none";
+
+        });
+    }
+
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+
+    function showToast(
+        message,
+        type = "success"
+    ) {
+
+        const container =
+            document.getElementById("toastContainer");
+
+        const toast =
+            document.createElement("div");
+
+        const isError =
+            type === "error";
+
+        toast.className = `
+            toast flex items-start gap-3
+            p-4 rounded-xl border
+            shadow-2xl
+            ${isError
+                ? "bg-red-950/90 border-red-800"
+                : "bg-gray-900/95 border-gray-700"
+            }
+        `;
+
+        toast.innerHTML = `
+
+            <div class="w-9 h-9 rounded-lg
+                        flex items-center justify-center
+                        ${isError
+                            ? "bg-red-500/10"
+                            : "bg-emerald-500/10"
+                        }">
+
+                ${isError ? "❌" : "✓"}
+
+            </div>
+
+            <div class="flex-1">
+
+                <p class="text-sm font-medium text-white">
+                    ${escapeHtml(message)}
+                </p>
+
+                <p class="text-xs text-gray-500 mt-1">
+                    ${isError
+                        ? "Ha ocurrido un error."
+                        : "Operación realizada correctamente."
+                    }
+                </p>
+
+            </div>
+
+            <button
+                class="text-gray-500 hover:text-white"
+                onclick="this.parentElement.remove()">
+                ✕
+            </button>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 4000);
+    }
+
+
+    // ============================================================
+    // CERRAR MODAL AL HACER CLICK AFUERA
+    // ============================================================
+
+    document.getElementById("modal")
+        .addEventListener("click", function(e) {
+
+            if (e.target === this) {
+                closeModal();
+            }
+
+        });
+
+
+    // ============================================================
+    // ESC PARA CERRAR MODAL
+    // ============================================================
+
+    document.addEventListener("keydown", function(e) {
+
+        if (e.key === "Escape") {
+            closeModal();
+        }
+
+    });
+
+
+    // ============================================================
+    // INICIO
+    // ============================================================
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+        showSection("dashboard");
+
+    });
+
+</script>
+
+</body>
+</html>
